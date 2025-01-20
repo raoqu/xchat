@@ -18,6 +18,7 @@ const Chat: React.FC = () => {
   const [open, setOpen] = React.useState(false);
   const [attachItems, setAttachItems] = React.useState<GetProp<AttachmentsProps, 'items'>>([]);
   const [text, setText] = React.useState('');
+  const responseTextRef = React.useRef('');
   const [hasRef, setHasRef] = React.useState(true);
   const { message } = App.useApp();
   const [recording, setRecording] = React.useState(false);
@@ -34,6 +35,7 @@ const Chat: React.FC = () => {
       const { onUpdate } = callbacks;
 
       try {
+        responseTextRef.current = ''; // Reset response text at the start of each request
         create(
           {
             messages: [{ role: 'user', content: message }],
@@ -45,15 +47,17 @@ const Chat: React.FC = () => {
                 const data = JSON.parse(chunk.data);
                 const content = data?.choices?.[0]?.delta?.content;
                 if (content) {
+                  responseTextRef.current += content;
                   console.log(content);
-                  onUpdate(content);
+                  onUpdate(responseTextRef.current);
                 }
               } catch (e) {
                 // Ignore invalid JSON data
                 console.debug('Invalid JSON data:', chunk.data);
               }
             },
-            onSuccess: (chunks:any[]) => {},
+            onSuccess: (chunks:any[]) => {
+            },
             onError: (error:Error) => {}
           },
         );
@@ -112,57 +116,70 @@ const Chat: React.FC = () => {
   );
 
   return (
-    <div style={{ height: '100%', maxWidth: 1200, margin: '0 auto' }}>
-    <Flex vertical gap="middle" align="flex-start" style={{  margin: '0 auto' }}>
-      <Bubble.List 
-        roles={roles} 
-        items={messages.map(({ id, message, status }) => ({
-          key: id,
-          role: status === 'local' ? 'local' : 'ai',
-          content: message,
-        }))}
-      />
-      <Switch
-        checked={hasRef}
-        onChange={() => setHasRef(!hasRef)}
-        checkedChildren="With Reference"
-        unCheckedChildren="With Reference"
-      />
-      <Sender
-        ref={senderRef}
-        header={senderHeader}
-        open={open}
-        prefix={
-          <Button
-            type="text"
-            icon={<LinkOutlined />}
-            onClick={() => {
-              setOpen(!open);
+    <div style={{ height: '100vh', maxWidth: 1200, margin: '0 auto', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '120px' }}>
+        <Bubble.List 
+          roles={roles} 
+          items={messages.map(({ id, message, status }) => ({
+            key: id,
+            role: status === 'local' ? 'local' : 'ai',
+            content: message,
+          }))}
+        />
+      </div>
+      <div style={{ 
+        position: 'fixed', 
+        bottom: 0, 
+        left: 0, 
+        right: 0, 
+        background: '#fff',
+        padding: '16px',
+        borderTop: '1px solid #f0f0f0',
+        zIndex: 1,
+        maxWidth: 1200,
+        margin: '0 auto'
+      }}>
+        <Flex vertical gap="middle" align="flex-start">
+          <Switch
+            checked={hasRef}
+            onChange={() => setHasRef(!hasRef)}
+            checkedChildren="With Reference"
+            unCheckedChildren="With Reference"
+          />
+          <Sender
+            ref={senderRef}
+            header={senderHeader}
+            open={open}
+            prefix={
+              <Button
+                type="text"
+                icon={<LinkOutlined />}
+                onClick={() => {
+                  setOpen(!open);
+                }}
+              />
+            }
+            value={text}
+            onChange={setText}
+            onPasteFile={(file) => {
+              attachmentsRef.current?.upload(file);
+              setOpen(true);
+            }}
+            placeholder="← 点击展开文件上传区域"
+            onSubmit={(msg) => {
+              onRequest(msg)
+              setAttachItems([]);
+              setText('');
+            }}
+            allowSpeech={{
+              recording,
+              onRecordingChange: (nextRecording) => {
+                setRecording(nextRecording);
+              },
             }}
           />
-        }
-        value={text}
-        onChange={setText}
-        onPasteFile={(file) => {
-          attachmentsRef.current?.upload(file);
-          setOpen(true);
-        }}
-        placeholder="← 点击展开文件上传区域"
-        onSubmit={(msg) => {
-          onRequest(msg)
-          setAttachItems([]);
-          setText('');
-        }}
-        allowSpeech={{
-          // When setting `recording`, the built-in speech recognition feature will be disabled
-          recording,
-          onRecordingChange: (nextRecording) => {
-            // message.info(`Mock Customize Recording: ${nextRecording}`);
-            setRecording(nextRecording);
-          },
-        }}
-      />
-    </Flex>
+        </Flex>
+      </div>
     </div>
   );
 };
