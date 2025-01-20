@@ -62,6 +62,15 @@ button:focus-visible {
   min-height: 100vh;
 }
 
+/* Remove focus border for voice and upload buttons */
+.ant-btn-text:focus-visible {
+  outline: none;
+}
+
+.ant-btn-text:hover {
+  background-color: transparent !important;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

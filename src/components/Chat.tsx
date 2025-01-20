@@ -8,6 +8,8 @@ const Chat: React.FC = () => {
   const [items, setItems] = React.useState<GetProp<AttachmentsProps, 'items'>>([]);
   const [text, setText] = React.useState('');
   const [hasRef, setHasRef] = React.useState(true);
+  const { message } = App.useApp();
+  const [recording, setRecording] = React.useState(false);
 
   const headerNode = (
     <Sender.Header
@@ -92,6 +94,15 @@ const Chat: React.FC = () => {
         onSubmit={() => {
           setItems([]);
           setText('');
+          message.success('Send message successfully!');
+        }}
+        allowSpeech={{
+          // When setting `recording`, the built-in speech recognition feature will be disabled
+          recording,
+          onRecordingChange: (nextRecording) => {
+            // message.info(`Mock Customize Recording: ${nextRecording}`);
+            setRecording(nextRecording);
+          },
         }}
       />
     </Flex>
