@@ -1,135 +1,101 @@
-import React, { useState, useRef } from 'react';
-import { Button, Input, Upload, message, Card, List, Space } from 'antd';
-import { SendOutlined, AudioOutlined, UploadOutlined } from '@ant-design/icons';
-import { generateResponse, ChatMessage } from '../api/ollama';
-
-const { TextArea } = Input;
+import { CloudUploadOutlined, EnterOutlined, LinkOutlined } from '@ant-design/icons';
+import { Attachments, AttachmentsProps, Sender } from '@ant-design/x';
+import { App, Button, Flex, Space, Switch, Typography, type GetProp, type GetRef } from 'antd';
+import React from 'react';
 
 const Chat: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputText, setInputText] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const [open, setOpen] = React.useState(false);
+  const [items, setItems] = React.useState<GetProp<AttachmentsProps, 'items'>>([]);
+  const [text, setText] = React.useState('');
+  const [hasRef, setHasRef] = React.useState(true);
 
-  const handleSend = async () => {
-    if (!inputText.trim()) return;
+  const headerNode = (
+    <Sender.Header
+      open={hasRef}
+      title={
+        <Space>
+          <EnterOutlined />
+          <Typography.Text type="secondary">"Tell more about Ant Design X"</Typography.Text>
+        </Space>
+      }
+      onOpenChange={setHasRef}
+    />
+  );
 
-    const newMessages = [
-      ...messages,
-      { role: 'user', content: inputText } as ChatMessage
-    ];
-    setMessages(newMessages);
-    setInputText('');
+  const attachmentsRef = React.useRef<GetRef<typeof Attachments>>(null);
 
-    try {
-      const response = await generateResponse(newMessages);
-      setMessages([...newMessages, response]);
-    } catch (error) {
-      message.error('Failed to get response from AI');
-    }
-  };
+  const senderRef = React.useRef<GetRef<typeof Sender>>(null);
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        chunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/wav' });
-        const formData = new FormData();
-        formData.append('audio', audioBlob);
-
-        try {
-          // Here we'll need to call whisper.cpp endpoint
-          const response = await fetch('http://localhost:8080/transcribe', {
-            method: 'POST',
-            body: formData,
-          });
-          const data = await response.json();
-          setInputText(data.text);
-        } catch (error) {
-          message.error('Failed to transcribe audio');
+  const senderHeader = (
+    <Sender.Header
+      title="Attachments"
+      styles={{
+        content: {
+          padding: 0,
+        },
+      }}
+      open={open}
+      onOpenChange={setOpen}
+      forceRender
+    >
+      <Attachments
+        ref={attachmentsRef}
+        // Mock not real upload file
+        beforeUpload={() => false}
+        items={items}
+        onChange={({ fileList }) => setItems(fileList)}
+        placeholder={(type) =>
+          type === 'drop'
+            ? {
+                title: 'Drop file here',
+              }
+            : {
+                icon: <CloudUploadOutlined />,
+                title: 'Upload files',
+                description: 'Click or drag files to this area to upload',
+              }
         }
-
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      message.error('Failed to start recording');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
+        getDropContainer={() => senderRef.current?.nativeElement}
+      />
+    </Sender.Header>
+  );
 
   return (
-    <Card style={{ maxWidth: 800, margin: '0 auto', marginTop: 20 }}>
-      <List
-        dataSource={messages}
-        renderItem={(msg) => (
-          <List.Item style={{ 
-            justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' 
-          }}>
-            <Card 
-              style={{ 
-                maxWidth: '70%',
-                backgroundColor: msg.role === 'user' ? '#e6f7ff' : '#f0f2f5'
-              }}
-            >
-              {msg.content}
-            </Card>
-          </List.Item>
-        )}
-        style={{ height: 400, overflow: 'auto', marginBottom: 20 }}
+    <div style={{ height: '100%', maxWidth: 1200, margin: '0 auto' }}>
+    <Flex vertical gap="middle" align="flex-start" style={{ height: 220, margin: '0 auto' }}>
+      <Switch
+        checked={hasRef}
+        onChange={() => setHasRef(!hasRef)}
+        checkedChildren="With Reference"
+        unCheckedChildren="With Reference"
       />
-      
-      <Space.Compact style={{ width: '100%' }}>
-        <TextArea
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          placeholder="Type your message..."
-          autoSize={{ minRows: 1, maxRows: 4 }}
-          onPressEnter={(e) => {
-            if (!e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-        />
-        <Button
-          icon={<AudioOutlined />}
-          onClick={isRecording ? stopRecording : startRecording}
-          danger={isRecording}
-        />
-        <Upload
-          beforeUpload={(file) => {
-            // Handle file upload here
-            return false;
-          }}
-          showUploadList={false}
-        >
-          <Button icon={<UploadOutlined />} />
-        </Upload>
-        <Button 
-          type="primary" 
-          icon={<SendOutlined />} 
-          onClick={handleSend}
-        />
-      </Space.Compact>
-    </Card>
+      <Sender
+        ref={senderRef}
+        header={senderHeader}
+        open={open}
+        prefix={
+          <Button
+            type="text"
+            icon={<LinkOutlined />}
+            onClick={() => {
+              setOpen(!open);
+            }}
+          />
+        }
+        value={text}
+        onChange={setText}
+        onPasteFile={(file) => {
+          attachmentsRef.current?.upload(file);
+          setOpen(true);
+        }}
+        placeholder="← Click to open"
+        onSubmit={() => {
+          setItems([]);
+          setText('');
+        }}
+      />
+    </Flex>
+    </div>
   );
 };
 
