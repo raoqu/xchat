@@ -1,0 +1,71 @@
+.chat-container {
+  height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 120px;
+}
+
+.chat-messages::-webkit-scrollbar {
+  display: none;
+}
+
+.chat-messages {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.chat-input-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 16px;
+  border-top: 1px solid #f0f0f0;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.scroll-to-bottom {
+  position: fixed;
+  right: 24px;
+  bottom: 140px;
+  z-index: 2;
+  opacity: 0.8;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.bubble-item-wrapper {
+  position: relative;
+}
+
+.bubble-item-wrapper .copy-button {
+  position: absolute;
+  top: -10px;
+  right: -15px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.bubble-item-wrapper:hover .copy-button {
+  background-color: #eeeeee;
+  border: 1px solid #cccccc;
+  opacity: 1;
+}
+
+.bubble-item-wrapper:hover .copy-button:hover {
+  background-color: #fff;
+  opacity: 1;
+}

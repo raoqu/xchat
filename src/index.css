@@ -62,13 +62,21 @@ button:focus-visible {
   min-height: 100vh;
 }
 
-/* Remove focus border for voice and upload buttons */
-.ant-btn-text:focus-visible {
-  outline: none;
+/* Remove focus border for all buttons */
+.ant-btn:focus,
+.ant-btn:focus-visible {
+  outline: none !important;
 }
 
-.ant-btn-text:hover {
-  background-color: transparent !important;
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 @media (prefers-color-scheme: light) {

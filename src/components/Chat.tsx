@@ -1,7 +1,8 @@
-import { CloudUploadOutlined, EnterOutlined, LinkOutlined, UserOutlined } from '@ant-design/icons';
+import { CloudUploadOutlined, CopyOutlined, EnterOutlined, LinkOutlined, UserOutlined, VerticalAlignBottomOutlined } from '@ant-design/icons';
 import { Attachments, Bubble, AttachmentsProps, Sender, useXChat, useXAgent, XRequest } from '@ant-design/x';
 import { App, Button, Flex, Space, Switch, Typography, type GetProp, type GetRef } from 'antd';
 import React from 'react';
+import './chat.css';
 
 const roles: GetProp<typeof Bubble.List, 'roles'> = {
   ai: {
@@ -20,8 +21,11 @@ const Chat: React.FC = () => {
   const [text, setText] = React.useState('');
   const responseTextRef = React.useRef('');
   const [hasRef, setHasRef] = React.useState(true);
-  const { message } = App.useApp();
+  const { message: appMessage } = App.useApp();
   const [recording, setRecording] = React.useState(false);
+  const bubbleContainerRef = React.useRef<HTMLDivElement>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = React.useState(true);
+  const [showScrollButton, setShowScrollButton] = React.useState(false);
 
   const { create } = XRequest({
     baseURL: '/v1/chat/completions',
@@ -57,6 +61,7 @@ const Chat: React.FC = () => {
               }
             },
             onSuccess: (chunks:any[]) => {
+              appMessage.success('成功');
             },
             onError: (error:Error) => {}
           },
@@ -72,6 +77,32 @@ const Chat: React.FC = () => {
     content: message,
   }));
 
+  const isScrolledToBottom = () => {
+    if (!bubbleContainerRef.current) return true;
+    const { scrollTop, scrollHeight, clientHeight } = bubbleContainerRef.current;
+    // Consider "almost" at bottom (within 10px) as at bottom
+    return scrollHeight - scrollTop - clientHeight < 10;
+  };
+
+  const scrollToBottom = () => {
+    if (bubbleContainerRef.current) {
+      bubbleContainerRef.current.scrollTop = bubbleContainerRef.current.scrollHeight;
+      setShouldAutoScroll(true);
+      setShowScrollButton(false);
+    }
+  };
+
+  const handleScroll = () => {
+    const atBottom = isScrolledToBottom();
+    setShouldAutoScroll(atBottom);
+    setShowScrollButton(!atBottom);
+  };
+
+  React.useEffect(() => {
+    if (shouldAutoScroll && bubbleContainerRef.current) {
+      scrollToBottom();
+    }
+  }, [messages, shouldAutoScroll]);
 
   const headerNode = (
     <Sender.Header
@@ -116,36 +147,54 @@ const Chat: React.FC = () => {
   );
 
   return (
-    <div style={{ height: '100vh', maxWidth: 1200, margin: '0 auto', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '120px' }}>
+    <div className="chat-container">
+      <div 
+        ref={bubbleContainerRef}
+        className="chat-messages"
+        onScroll={handleScroll}
+      >
         <Bubble.List 
           roles={roles} 
           items={messages.map(({ id, message, status }) => ({
             key: id,
             role: status === 'local' ? 'local' : 'ai',
-            content: message,
+            content: (
+              <div className="bubble-item-wrapper">
+                {message}
+                <Button
+                  className="copy-button"
+                  type="text"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(message).then(() => {
+                      // appMessage.success('已复制到剪贴板');
+                    });
+                  }}
+                />
+              </div>
+            ),
           }))}
         />
       </div>
-      <div style={{ 
-        position: 'fixed', 
-        bottom: 0, 
-        left: 0, 
-        right: 0, 
-        background: '#fff',
-        padding: '16px',
-        borderTop: '1px solid #f0f0f0',
-        zIndex: 1,
-        maxWidth: 1200,
-        margin: '0 auto'
-      }}>
+      {showScrollButton && (
+        <Button
+          type="primary"
+          shape="circle"
+          icon={<VerticalAlignBottomOutlined />}
+          onClick={scrollToBottom}
+          className="scroll-to-bottom"
+        />
+      )}
+      <div className="chat-input-container">
         <Flex vertical gap="middle" align="flex-start">
-          <Switch
+          {/* <Switch
             checked={hasRef}
             onChange={() => setHasRef(!hasRef)}
             checkedChildren="With Reference"
             unCheckedChildren="With Reference"
-          />
+          /> */}
           <Sender
             ref={senderRef}
             header={senderHeader}
