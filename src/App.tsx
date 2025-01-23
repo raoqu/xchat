@@ -1,4 +1,4 @@
-import { ConfigProvider, theme } from 'antd';
+import { App as AntApp, ConfigProvider, theme } from 'antd';
 import Chat from './components/Chat';
 
 function App() {
@@ -8,9 +8,11 @@ function App() {
         algorithm: theme.defaultAlgorithm,
       }}
     >
-      <div style={{ padding: 20 }}>
-        <Chat />
-      </div>
+      <AntApp>
+        <div style={{ padding: 20 }}>
+          <Chat />
+        </div>
+      </AntApp>
     </ConfigProvider>
   );
 }

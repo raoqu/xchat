@@ -1,6 +1,6 @@
-import { CloudUploadOutlined, CopyOutlined, EnterOutlined, LinkOutlined, UserOutlined, VerticalAlignBottomOutlined } from '@ant-design/icons';
+import { CloudUploadOutlined, CopyOutlined, EnterOutlined, LinkOutlined, LoadingOutlined, SoundOutlined, UserOutlined, VerticalAlignBottomOutlined } from '@ant-design/icons';
 import { Attachments, Bubble, AttachmentsProps, Sender, useXChat, useXAgent, XRequest } from '@ant-design/x';
-import { App, Button, Flex, Space, Switch, Typography, type GetProp, type GetRef } from 'antd';
+import { App, Button, Flex, Modal, Space, Spin, Switch, Typography, type GetProp, type GetRef } from 'antd';
 import React from 'react';
 import './chat.css';
 
@@ -21,11 +21,16 @@ const Chat: React.FC = () => {
   const [text, setText] = React.useState('');
   const responseTextRef = React.useRef('');
   const [hasRef, setHasRef] = React.useState(true);
-  const { message: appMessage } = App.useApp();
+  const { message: appMessage, modal } = App.useApp();
   const [recording, setRecording] = React.useState(false);
   const bubbleContainerRef = React.useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = React.useState(true);
   const [showScrollButton, setShowScrollButton] = React.useState(false);
+  const [playingMessageId, setPlayingMessageId] = React.useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
+  const [showAudioModal, setShowAudioModal] = React.useState(false);
+  const [isPlaying, setIsPlaying] = React.useState(false);
+  const audioRef = React.useRef<HTMLAudioElement>(null);
 
   const { create } = XRequest({
     baseURL: '/v1/chat/completions',
@@ -52,7 +57,6 @@ const Chat: React.FC = () => {
                 const content = data?.choices?.[0]?.delta?.content;
                 if (content) {
                   responseTextRef.current += content;
-                  console.log(content);
                   onUpdate(responseTextRef.current);
                 }
               } catch (e) {
@@ -146,6 +150,84 @@ const Chat: React.FC = () => {
     </Sender.Header>
   );
 
+  const playAudio = async (url: string) => {
+    try {
+      const playResponse = await fetch(`/play?url=${encodeURIComponent(url)}`);
+      if (!playResponse.ok) {
+        throw new Error('Failed to get audio stream');
+      }
+      const playUrl = await playResponse.text();
+      
+      if (audioRef.current) {
+        audioRef.current.src = playUrl;
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setIsPlaying(true);
+            })
+            .catch(error => {
+              console.error('Audio playback failed:', error);
+              appMessage.error('Failed to play audio');
+            });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to play audio:', error);
+      appMessage.error('Failed to play audio');
+    }
+  };
+
+  const handleSpeak = async (text: string, messageId: string) => {
+    let modalInstance: ReturnType<typeof modal.info> | null = null;
+    try {
+      setPlayingMessageId(messageId);
+      
+      // Show loading modal
+      modalInstance = modal.info({
+        title: 'Converting text to speech',
+        content: (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
+            <p style={{ marginTop: 16 }}>Please wait while we process your request...</p>
+          </div>
+        ),
+        icon: null,
+        maskClosable: false,
+        closable: false,
+        footer: null,
+      });
+
+      const response = await fetch('/speak', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to speak');
+      }
+
+      const data = await response.json();
+      setAudioUrl(data.url);
+      
+      // Close loading modal
+      modalInstance?.destroy();
+
+      // Show audio player modal and start playing
+      setShowAudioModal(true);
+      await playAudio(data.url);
+      
+    } catch (error) {
+      modalInstance?.destroy();
+      appMessage.error('Failed to speak text');
+    } finally {
+      setPlayingMessageId(null);
+    }
+  };
+
   return (
     <div className="chat-container">
       <div 
@@ -161,23 +243,100 @@ const Chat: React.FC = () => {
             content: (
               <div className="bubble-item-wrapper">
                 {message}
-                <Button
-                  className="copy-button"
-                  type="text"
-                  size="small"
-                  icon={<CopyOutlined />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigator.clipboard.writeText(message).then(() => {
-                      // appMessage.success('已复制到剪贴板');
-                    });
-                  }}
-                />
+                <Space.Compact className="bubble-actions">
+                  <Button
+                    className="copy-button"
+                    type="text"
+                    size="small"
+                    icon={<CopyOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(message).then(() => {
+                        // appMessage.success('已复制到剪贴板');
+                      });
+                    }}
+                  />
+                  <Button
+                    className="speak-button"
+                    type="text"
+                    size="small"
+                    loading={playingMessageId === id}
+                    icon={<SoundOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSpeak(message, id);
+                    }}
+                  />
+                </Space.Compact>
               </div>
             ),
           }))}
         />
       </div>
+
+      <Modal
+        title="Audio Player"
+        open={showAudioModal}
+        onCancel={() => {
+          if (audioRef.current) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+          }
+          setShowAudioModal(false);
+        }}
+        footer={[
+          <Button 
+            key="replay" 
+            type="primary"
+            icon={<SoundOutlined />}
+            onClick={() => audioUrl && playAudio(audioUrl)}
+            style={{ marginRight: 8 }}
+          >
+            Replay
+          </Button>,
+          <Button 
+            key="close" 
+            onClick={() => {
+              if (audioRef.current) {
+                audioRef.current.pause();
+                setIsPlaying(false);
+              }
+              setShowAudioModal(false);
+            }}
+          >
+            Close
+          </Button>
+        ]}
+      >
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          {audioUrl && (
+            <>
+              <audio
+                ref={audioRef}
+                controls
+                style={{ width: '100%' }}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => setIsPlaying(false)}
+              />
+              <div style={{ marginTop: 16 }}>
+                {isPlaying ? (
+                  <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
+                ) : (
+                  <Button 
+                    type="primary" 
+                    icon={<SoundOutlined />}
+                    onClick={() => playAudio(audioUrl)}
+                  >
+                    Play Again
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
+
       {showScrollButton && (
         <Button
           type="primary"

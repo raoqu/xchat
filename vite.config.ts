@@ -10,6 +10,14 @@ export default defineConfig({
         target: 'http://127.0.0.1:1234',
         changeOrigin: true,
       },
+      '/speak': {
+        target: 'http://127.0.0.1:5001',
+        changeOrigin: true,
+      },
+      '/play': {
+        target: 'http://127.0.0.1:5001',
+        changeOrigin: true,
+      },
     },
   },
 })

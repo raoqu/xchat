@@ -48,24 +48,29 @@
   position: relative;
 }
 
-.bubble-item-wrapper .copy-button {
+.bubble-item-wrapper .bubble-actions {
   position: absolute;
   top: -10px;
   right: -15px;
   opacity: 0;
   transition: opacity 0.2s;
+}
+
+.bubble-item-wrapper .bubble-actions .ant-btn {
   background: rgba(255, 255, 255, 0.9);
   border: none;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
-.bubble-item-wrapper:hover .copy-button {
-  background-color: #eeeeee;
-  border: 1px solid #cccccc;
+.bubble-item-wrapper:hover .bubble-actions {
   opacity: 1;
 }
 
-.bubble-item-wrapper:hover .copy-button:hover {
+.bubble-item-wrapper:hover .bubble-actions .ant-btn {
+  background-color: #eeeeee;
+  border: 1px solid #cccccc;
+}
+
+.bubble-item-wrapper:hover .bubble-actions .ant-btn:hover {
   background-color: #fff;
-  opacity: 1;
 }
