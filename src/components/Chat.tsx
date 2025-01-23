@@ -1,4 +1,4 @@
-import { CloudUploadOutlined, CopyOutlined, EnterOutlined, LinkOutlined, LoadingOutlined, MenuOutlined, SettingOutlined, SoundOutlined, UserOutlined, VerticalAlignBottomOutlined } from '@ant-design/icons';
+import { CloudUploadOutlined, CopyOutlined, EnterOutlined, LinkOutlined, LoadingOutlined, MenuOutlined, SettingOutlined, SoundOutlined, UserOutlined, VerticalAlignBottomOutlined, AudioOutlined } from '@ant-design/icons';
 import { Attachments, Bubble, AttachmentsProps, Sender, useXChat, useXAgent, XRequest } from '@ant-design/x';
 import { App, Button, Dropdown, Flex, Menu, Modal, Space, Spin, Switch, Typography, type GetProp, type GetRef } from 'antd';
 import React from 'react';
@@ -45,7 +45,6 @@ const Chat: React.FC = () => {
     '2d4fe930c97146c98ae2785c2845341a': '关羽',
     'a8c09950c8664e13a7d11b54e37a8e29': '曹操-激动',
     '其他': '---',
-    'aebaa2305aa2452fbdc8f41eec852a79': '雷军',
     '8be867e6c76842758ce6f1625d60bb77': '雷军（演讲）',
     '诱惑风': '---',
     '6ce7ea8ada884bf3889fa7c7fb206691': '茉莉（御女）',
@@ -294,19 +293,20 @@ const Chat: React.FC = () => {
     }
   };
 
+  const voiceMenu = (
+    <Menu
+      style={{ maxHeight: '400px', overflowY: 'auto' }}
+      items={createMenuItems(
+        VOICE_OPTIONS,
+        selectedVoice,
+        setSelectedVoice
+      )}
+    />
+  );
+
   const settingsMenu = (
     <Menu
       items={[
-        {
-          key: 'voice',
-          label: '语音设置',
-          children: createMenuItems(
-            VOICE_OPTIONS,
-            selectedVoice,
-            setSelectedVoice
-          ),
-          popupClassName: 'scrollable-submenu',
-        },
         {
           key: 'llm',
           label: 'LLM设置',
@@ -397,14 +397,30 @@ const Chat: React.FC = () => {
       <div className="chat-input">
         <div className="chat-input-wrapper">
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Dropdown 
-              overlay={settingsMenu} 
-              trigger={['click']}
-              placement="topLeft"
-            >
+            <Dropdown overlay={settingsMenu} trigger={['click']}>
               <Button
                 type="text"
                 icon={<SettingOutlined />}
+                style={{ marginRight: 8 }}
+              />
+            </Dropdown>
+            <Dropdown 
+              overlay={voiceMenu} 
+              trigger={['click']}
+              dropdownRender={(menu) => (
+                <div style={{ 
+                  border: '1px solid #f0f0f0',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  background: '#fff'
+                }}>
+                  {menu}
+                </div>
+              )}
+            >
+              <Button
+                type="text"
+                icon={<AudioOutlined />}
                 style={{ marginRight: 8 }}
               />
             </Dropdown>

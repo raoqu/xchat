@@ -10,7 +10,8 @@
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 120px;
+  padding: 16px;
+  padding-bottom: 80px;
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -28,6 +29,7 @@
   background: #fff;
   padding: 8px 16px 8px 0;
   border-top: 1px solid #f0f0f0;
+  z-index: 1;
 }
 
 .chat-input-wrapper {
@@ -75,20 +77,37 @@
   background-color: #fff;
 }
 
-.scrollable-submenu .ant-dropdown-menu {
+.scrollable-submenu.ant-menu,
+.scrollable-submenu .ant-menu {
   max-height: 400px;
   overflow-y: auto;
 }
 
-.scrollable-submenu .ant-dropdown-menu::-webkit-scrollbar {
+.scrollable-submenu.ant-menu::-webkit-scrollbar,
+.scrollable-submenu .ant-menu::-webkit-scrollbar {
   width: 6px;
 }
 
-.scrollable-submenu .ant-dropdown-menu::-webkit-scrollbar-thumb {
+.scrollable-submenu.ant-menu::-webkit-scrollbar-thumb,
+.scrollable-submenu .ant-menu::-webkit-scrollbar-thumb {
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 3px;
 }
 
-.scrollable-submenu .ant-dropdown-menu::-webkit-scrollbar-track {
+.scrollable-submenu.ant-menu::-webkit-scrollbar-track,
+.scrollable-submenu .ant-menu::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.ant-dropdown-menu-root::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ant-dropdown-menu-root::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.ant-dropdown-menu-root::-webkit-scrollbar-track {
   background-color: transparent;
 }
