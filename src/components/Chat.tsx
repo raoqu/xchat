@@ -1,6 +1,6 @@
-import { CloudUploadOutlined, CopyOutlined, EnterOutlined, LinkOutlined, LoadingOutlined, SoundOutlined, UserOutlined, VerticalAlignBottomOutlined } from '@ant-design/icons';
+import { CloudUploadOutlined, CopyOutlined, EnterOutlined, LinkOutlined, LoadingOutlined, MenuOutlined, SettingOutlined, SoundOutlined, UserOutlined, VerticalAlignBottomOutlined } from '@ant-design/icons';
 import { Attachments, Bubble, AttachmentsProps, Sender, useXChat, useXAgent, XRequest } from '@ant-design/x';
-import { App, Button, Flex, Modal, Space, Spin, Switch, Typography, type GetProp, type GetRef } from 'antd';
+import { App, Button, Dropdown, Flex, Menu, Modal, Space, Spin, Switch, Typography, type GetProp, type GetRef } from 'antd';
 import React from 'react';
 import './chat.css';
 
@@ -16,6 +16,71 @@ const roles: GetProp<typeof Bubble.List, 'roles'> = {
 };
 
 const Chat: React.FC = () => {
+  const VOICE_OPTIONS = {
+    '1aacaeb1b840436391b835fd5513f4c4': '默认（芙宁娜）',
+    '2d01a8fde0334a64bd64f28bd3658043': '电台情感（女）',
+    'cb73f2bb9bf447f492f118bf362c10b4': '治愈放松女声',
+    '4ddfa1f451f04d85b809dcad9d76e91f': '舒服的男声',
+    '59cb5986671546eaa6ca8ae6f29f6d22': '央视配音（男）',
+    '6758b6fa79384cffae6f4adea4b5cc65': '短剧解说',
+    '明星': '---',
+    'cb03a4a3ff6a4784b319cde85a07e31c': '刘德华',
+    'a8145bae97fe46b483ac228e47f57c51': '刘德华（沙哑）',
+    '6df306900c4547158edfdd824240ea78': '彭于晏',
+    '8dec7aaf4edc4d55a60132179a36b0df': '赵本山',
+    '188c9b7c06654042be0e8a25781761e8': '周杰伦',
+    '9a32f25d901e48e0885dbda99b08593a': '撒贝宁',
+    '54a5170264694bfc8e9ad98df7bd89c3': '丁真',
+    '3b55b3d84d2f453a98d8ca9bb24182d6': '邓紫琪',
+    '9cb8c56838094a7ab0fcd2ec355316b9': '刘亦菲',
+    '动漫': '---',
+    '131c6b3a889543139680d8b3aa26b98d': '懒羊羊',
+    '0b8449eb752c4f888f463fc5d2c0db65': '可莉',
+    '626bb6d3f3364c9cbc3aa6a67300a664': '可莉(2)',
+    '29a7fd66aba84ea9a00f7f6e25e74238': '初学道悟空',
+    '3d1cb00d75184099992ddbaf0fdd7387': '奶龙',
+    'a89a387d743f46f99a6935655673a050': '海绵宝宝',
+    '影视角色': '---',
+    '4729cb883a58431996b998f2fca7f38b': '祁同伟',
+    '2d4fe930c97146c98ae2785c2845341a': '关羽',
+    'a8c09950c8664e13a7d11b54e37a8e29': '曹操-激动',
+    '其他': '---',
+    'aebaa2305aa2452fbdc8f41eec852a79': '雷军',
+    '8be867e6c76842758ce6f1625d60bb77': '雷军（演讲）',
+    '诱惑风': '---',
+    '6ce7ea8ada884bf3889fa7c7fb206691': '茉莉（御女）',
+    'a2569c4274ac40a4824ce1919f4de093': '夹子音',
+    'e9198dfc754b4d83b501612c4c95c615': '女王陛下',
+  } as const;
+
+  const MODEL_OPTIONS = {
+    'qwen': '通义千问',
+    'gpt-4': 'GPT-4',
+    'gpt-3.5-turbo': 'GPT-3.5',
+  } as const;
+
+  const createMenuItems = <T extends string>(
+    options: Record<T, string>,
+    selectedValue: T,
+    onSelect: (value: T) => void
+  ) => {
+    return Object.entries(options).map(([value, label]) => {
+      if (label === '---') {
+        return { type: 'divider' };
+      }
+      return {
+        key: value,
+        label: (
+          <Space>
+            <span>{label}</span>
+            {selectedValue === value && <span style={{ color: '#1890ff' }}>✓</span>}
+          </Space>
+        ),
+        onClick: () => onSelect(value as T),
+      };
+    });
+  };
+
   const [open, setOpen] = React.useState(false);
   const [attachItems, setAttachItems] = React.useState<GetProp<AttachmentsProps, 'items'>>([]);
   const [text, setText] = React.useState('');
@@ -31,11 +96,13 @@ const Chat: React.FC = () => {
   const [showAudioModal, setShowAudioModal] = React.useState(false);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const audioRef = React.useRef<HTMLAudioElement>(null);
+  const [selectedVoice, setSelectedVoice] = React.useState<keyof typeof VOICE_OPTIONS>('1aacaeb1b840436391b835fd5513f4c4');
+  const [selectedModel, setSelectedModel] = React.useState<keyof typeof MODEL_OPTIONS>('qwen');
 
   const { create } = XRequest({
     baseURL: '/v1/chat/completions',
     dangerouslyApiKey: "******",
-    model: 'qwen',
+    model: selectedModel,
   });
 
   const [agent] = useXAgent({
@@ -181,11 +248,11 @@ const Chat: React.FC = () => {
       
       // Show loading modal
       modalInstance = modal.info({
-        title: 'Converting text to speech',
+        title: '正在转换语音',
         content: (
           <div style={{ textAlign: 'center', padding: '20px' }}>
             <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
-            <p style={{ marginTop: 16 }}>Please wait while we process your request...</p>
+            <p style={{ marginTop: 16 }}>请稍候...</p>
           </div>
         ),
         icon: null,
@@ -199,7 +266,10 @@ const Chat: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text,
+          voice: selectedVoice,
+        }),
       });
       
       if (!response.ok) {
@@ -218,11 +288,37 @@ const Chat: React.FC = () => {
       
     } catch (error) {
       modalInstance?.destroy();
-      appMessage.error('Failed to speak text');
+      appMessage.error('语音转换失败');
     } finally {
       setPlayingMessageId(null);
     }
   };
+
+  const settingsMenu = (
+    <Menu
+      items={[
+        {
+          key: 'voice',
+          label: '语音设置',
+          children: createMenuItems(
+            VOICE_OPTIONS,
+            selectedVoice,
+            setSelectedVoice
+          ),
+          popupClassName: 'scrollable-submenu',
+        },
+        {
+          key: 'llm',
+          label: 'LLM设置',
+          children: createMenuItems(
+            MODEL_OPTIONS,
+            selectedModel,
+            setSelectedModel
+          ),
+        },
+      ]}
+    />
+  );
 
   return (
     <div className="chat-container">
@@ -293,23 +389,60 @@ const Chat: React.FC = () => {
                 onPause={() => setIsPlaying(false)}
                 onEnded={() => setIsPlaying(false)}
               />
-              {/* <div style={{ marginTop: 16 }}>
-                {isPlaying ? (
-                  <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
-                ) : (
-                  <Button 
-                    type="primary" 
-                    icon={<SoundOutlined />}
-                    onClick={() => playAudio(audioUrl)}
-                  >
-                    Play Again
-                  </Button>
-                )}
-              </div> */}
             </>
           )}
         </div>
       </Modal>
+
+      <div className="chat-input">
+        <div className="chat-input-wrapper">
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Dropdown 
+              overlay={settingsMenu} 
+              trigger={['click']}
+              placement="topLeft"
+            >
+              <Button
+                type="text"
+                icon={<SettingOutlined />}
+                style={{ marginRight: 8 }}
+              />
+            </Dropdown>
+            <Sender
+              ref={senderRef}
+              header={senderHeader}
+              open={open}
+              prefix={
+                <Button
+                  type="text"
+                  icon={<LinkOutlined />}
+                  onClick={() => {
+                    setOpen(!open);
+                  }}
+                />
+              }
+              value={text}
+              onChange={setText}
+              onPasteFile={(file) => {
+                attachmentsRef.current?.upload(file);
+                setOpen(true);
+              }}
+              placeholder="← 点击展开文件上传区域"
+              onSubmit={(msg) => {
+                onRequest(msg)
+                setAttachItems([]);
+                setText('');
+              }}
+              allowSpeech={{
+                recording,
+                onRecordingChange: (nextRecording) => {
+                  setRecording(nextRecording);
+                },
+              }}
+            />
+          </div>
+        </div>
+      </div>
 
       {showScrollButton && (
         <Button
@@ -320,48 +453,6 @@ const Chat: React.FC = () => {
           className="scroll-to-bottom"
         />
       )}
-      <div className="chat-input-container">
-        <Flex vertical gap="middle" align="flex-start">
-          {/* <Switch
-            checked={hasRef}
-            onChange={() => setHasRef(!hasRef)}
-            checkedChildren="With Reference"
-            unCheckedChildren="With Reference"
-          /> */}
-          <Sender
-            ref={senderRef}
-            header={senderHeader}
-            open={open}
-            prefix={
-              <Button
-                type="text"
-                icon={<LinkOutlined />}
-                onClick={() => {
-                  setOpen(!open);
-                }}
-              />
-            }
-            value={text}
-            onChange={setText}
-            onPasteFile={(file) => {
-              attachmentsRef.current?.upload(file);
-              setOpen(true);
-            }}
-            placeholder="← 点击展开文件上传区域"
-            onSubmit={(msg) => {
-              onRequest(msg)
-              setAttachItems([]);
-              setText('');
-            }}
-            allowSpeech={{
-              recording,
-              onRecordingChange: (nextRecording) => {
-                setRecording(nextRecording);
-              },
-            }}
-          />
-        </Flex>
-      </div>
     </div>
   );
 };
