@@ -152,11 +152,7 @@ const Chat: React.FC = () => {
 
   const playAudio = async (url: string) => {
     try {
-      const playResponse = await fetch(`/play?url=${encodeURIComponent(url)}`);
-      if (!playResponse.ok) {
-        throw new Error('Failed to get audio stream');
-      }
-      const playUrl = await playResponse.text();
+      const playUrl =`/play?url=${encodeURIComponent(url)}`
       
       if (audioRef.current) {
         audioRef.current.src = playUrl;
@@ -275,7 +271,7 @@ const Chat: React.FC = () => {
       </div>
 
       <Modal
-        title="Audio Player"
+        title="语音播放"
         open={showAudioModal}
         onCancel={() => {
           if (audioRef.current) {
@@ -284,29 +280,7 @@ const Chat: React.FC = () => {
           }
           setShowAudioModal(false);
         }}
-        footer={[
-          <Button 
-            key="replay" 
-            type="primary"
-            icon={<SoundOutlined />}
-            onClick={() => audioUrl && playAudio(audioUrl)}
-            style={{ marginRight: 8 }}
-          >
-            Replay
-          </Button>,
-          <Button 
-            key="close" 
-            onClick={() => {
-              if (audioRef.current) {
-                audioRef.current.pause();
-                setIsPlaying(false);
-              }
-              setShowAudioModal(false);
-            }}
-          >
-            Close
-          </Button>
-        ]}
+        footer={<></>}
       >
         <div style={{ textAlign: 'center', padding: '20px' }}>
           {audioUrl && (
@@ -319,7 +293,7 @@ const Chat: React.FC = () => {
                 onPause={() => setIsPlaying(false)}
                 onEnded={() => setIsPlaying(false)}
               />
-              <div style={{ marginTop: 16 }}>
+              {/* <div style={{ marginTop: 16 }}>
                 {isPlaying ? (
                   <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
                 ) : (
@@ -331,7 +305,7 @@ const Chat: React.FC = () => {
                     Play Again
                   </Button>
                 )}
-              </div>
+              </div> */}
             </>
           )}
         </div>
