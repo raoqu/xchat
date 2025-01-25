@@ -25,7 +25,6 @@ const Chat: React.FC = () => {
     '6758b6fa79384cffae6f4adea4b5cc65': '短剧解说',
     '明星': '---',
     'cb03a4a3ff6a4784b319cde85a07e31c': '刘德华',
-    'a8145bae97fe46b483ac228e47f57c51': '刘德华（沙哑）',
     '6df306900c4547158edfdd824240ea78': '彭于晏',
     '8dec7aaf4edc4d55a60132179a36b0df': '赵本山',
     '188c9b7c06654042be0e8a25781761e8': '周杰伦',
