@@ -1,8 +1,9 @@
-import { CloudUploadOutlined, CopyOutlined, EnterOutlined, LinkOutlined, LoadingOutlined, MenuOutlined, SettingOutlined, SoundOutlined, UserOutlined, VerticalAlignBottomOutlined, AudioOutlined } from '@ant-design/icons';
+import { CloudUploadOutlined, CopyOutlined, EnterOutlined, LinkOutlined, LoadingOutlined, MenuOutlined, SettingOutlined, SoundOutlined, UserOutlined, VerticalAlignBottomOutlined, AudioOutlined, RobotOutlined, TranslationOutlined, EditOutlined, FileSearchOutlined } from '@ant-design/icons';
 import { Attachments, Bubble, AttachmentsProps, Sender, useXChat, useXAgent, XRequest } from '@ant-design/x';
 import { App, Button, Dropdown, Flex, Menu, Modal, Space, Spin, Switch, Typography, type GetProp, type GetRef } from 'antd';
 import React from 'react';
 import './chat.css';
+import { VOICE_OPTIONS, VoicePlayer, VoiceOption } from './Voice';
 
 const roles: GetProp<typeof Bubble.List, 'roles'> = {
   ai: {
@@ -16,41 +17,6 @@ const roles: GetProp<typeof Bubble.List, 'roles'> = {
 };
 
 const Chat: React.FC = () => {
-  const VOICE_OPTIONS = {
-    '1aacaeb1b840436391b835fd5513f4c4': '默认（芙宁娜）',
-    '2d01a8fde0334a64bd64f28bd3658043': '电台情感（女）',
-    'cb73f2bb9bf447f492f118bf362c10b4': '治愈放松女声',
-    '4ddfa1f451f04d85b809dcad9d76e91f': '舒服的男声',
-    '59cb5986671546eaa6ca8ae6f29f6d22': '央视配音（男）',
-    '6758b6fa79384cffae6f4adea4b5cc65': '短剧解说',
-    '明星': '---',
-    'cb03a4a3ff6a4784b319cde85a07e31c': '刘德华',
-    '6df306900c4547158edfdd824240ea78': '彭于晏',
-    '8dec7aaf4edc4d55a60132179a36b0df': '赵本山',
-    '188c9b7c06654042be0e8a25781761e8': '周杰伦',
-    '9a32f25d901e48e0885dbda99b08593a': '撒贝宁',
-    '54a5170264694bfc8e9ad98df7bd89c3': '丁真',
-    '3b55b3d84d2f453a98d8ca9bb24182d6': '邓紫琪',
-    '9cb8c56838094a7ab0fcd2ec355316b9': '刘亦菲',
-    '动漫': '---',
-    '131c6b3a889543139680d8b3aa26b98d': '懒羊羊',
-    '0b8449eb752c4f888f463fc5d2c0db65': '可莉',
-    '626bb6d3f3364c9cbc3aa6a67300a664': '可莉(2)',
-    '29a7fd66aba84ea9a00f7f6e25e74238': '初学道悟空',
-    '3d1cb00d75184099992ddbaf0fdd7387': '奶龙',
-    'a89a387d743f46f99a6935655673a050': '海绵宝宝',
-    '影视角色': '---',
-    '4729cb883a58431996b998f2fca7f38b': '祁同伟',
-    '2d4fe930c97146c98ae2785c2845341a': '关羽',
-    'a8c09950c8664e13a7d11b54e37a8e29': '曹操-激动',
-    '其他': '---',
-    '8be867e6c76842758ce6f1625d60bb77': '雷军（演讲）',
-    '诱惑风': '---',
-    '6ce7ea8ada884bf3889fa7c7fb206691': '茉莉（御女）',
-    'a2569c4274ac40a4824ce1919f4de093': '夹子音',
-    'e9198dfc754b4d83b501612c4c95c615': '女王陛下',
-  } as const;
-
   const MODEL_OPTIONS = {
     'qwen': '通义千问',
     'gpt-4': 'GPT-4',
@@ -94,8 +60,10 @@ const Chat: React.FC = () => {
   const [showAudioModal, setShowAudioModal] = React.useState(false);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const audioRef = React.useRef<HTMLAudioElement>(null);
-  const [selectedVoice, setSelectedVoice] = React.useState<keyof typeof VOICE_OPTIONS>('1aacaeb1b840436391b835fd5513f4c4');
+  const [selectedVoice, setSelectedVoice] = React.useState<VoiceOption>('1aacaeb1b840436391b835fd5513f4c4');
   const [selectedModel, setSelectedModel] = React.useState<keyof typeof MODEL_OPTIONS>('qwen');
+
+  const voicePlayer = React.useMemo(() => new VoicePlayer(audioRef, appMessage), [appMessage]);
 
   const { create } = XRequest({
     baseURL: '/v1/chat/completions',
@@ -217,76 +185,22 @@ const Chat: React.FC = () => {
 
   const playAudio = async (url: string) => {
     try {
-      const playUrl =`/play?url=${encodeURIComponent(url)}`
-      
-      if (audioRef.current) {
-        audioRef.current.src = playUrl;
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              setIsPlaying(true);
-            })
-            .catch(error => {
-              console.error('Audio playback failed:', error);
-              appMessage.error('Failed to play audio');
-            });
-        }
-      }
+      await voicePlayer.playAudio(url);
+      setIsPlaying(true);
     } catch (error) {
-      console.error('Failed to play audio:', error);
-      appMessage.error('Failed to play audio');
+      setIsPlaying(false);
     }
   };
 
   const handleSpeak = async (text: string, messageId: string) => {
-    let modalInstance: ReturnType<typeof modal.info> | null = null;
     try {
       setPlayingMessageId(messageId);
-      
-      // Show loading modal
-      modalInstance = modal.info({
-        title: '正在转换语音',
-        content: (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
-            <p style={{ marginTop: 16 }}>请稍候...</p>
-          </div>
-        ),
-        icon: null,
-        maskClosable: false,
-        closable: false,
-        footer: null,
-      });
-
-      const response = await fetch('/speak', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text,
-          voice: selectedVoice,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to speak');
-      }
-
-      const data = await response.json();
-      setAudioUrl(data.url);
-      
-      // Close loading modal
-      modalInstance?.destroy();
-
-      // Show audio player modal and start playing
+      const url = await voicePlayer.handleSpeak(text, selectedVoice);
+      setAudioUrl(url);
       setShowAudioModal(true);
-      await playAudio(data.url);
-      
+      await playAudio(url);
     } catch (error) {
-      modalInstance?.destroy();
-      appMessage.error('语音转换失败');
+      console.error('Failed to handle speak:', error);
     } finally {
       setPlayingMessageId(null);
     }
@@ -318,6 +232,91 @@ const Chat: React.FC = () => {
       ]}
     />
   );
+
+  interface ToolbarStatus {
+    robot: boolean;
+    translate: boolean;
+    edit: boolean;
+    search: boolean;
+  }
+
+  const [toolbarStatus, setToolbarStatus] = React.useState<ToolbarStatus>({
+    robot: false,
+    translate: false,
+    edit: false,
+    search: false
+  });
+
+  const toggleIcon = (iconKey: keyof ToolbarStatus) => {
+    setToolbarStatus(prev => ({
+      ...prev,
+      [iconKey]: !prev[iconKey]
+    }));
+  };
+
+  const iconButtons = [
+    { key: 'robot' as const, icon: <RobotOutlined />, tooltip: 'AI Assistant' },
+    { key: 'translate' as const, icon: <TranslationOutlined />, tooltip: 'Translate' },
+    { key: 'edit' as const, icon: <EditOutlined />, tooltip: 'Edit' },
+    { key: 'search' as const, icon: <FileSearchOutlined />, tooltip: 'Search' },
+  ];
+
+  const preprocessInput = async (text: string): Promise<string> => {
+    let processedText = text;
+
+    if (toolbarStatus.translate) {
+      try {
+        const response = await fetch('/translate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text: processedText }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          processedText = data.translatedText;
+        }
+      } catch (error) {
+        console.error('Translation failed:', error);
+        appMessage.error('Translation failed');
+      }
+    }
+
+    if (toolbarStatus.edit) {
+      processedText = `Please help edit and improve this text: ${processedText}`;
+    }
+
+    if (toolbarStatus.search) {
+      processedText = `Please help search for information about: ${processedText}`;
+    }
+
+    if (toolbarStatus.robot) {
+      processedText = `As an AI assistant, please help with: ${processedText}`;
+    }
+
+    return processedText;
+  };
+
+  const getPlaceholder = () => {
+    const activeFeatures = Object.entries(toolbarStatus)
+      .filter(([_, value]) => value)
+      .map(([key]) => {
+        switch (key) {
+          case 'robot': return 'AI Assistant';
+          case 'translate': return 'Translation';
+          case 'edit': return 'Editing';
+          case 'search': return 'Search';
+          default: return '';
+        }
+      });
+
+    if (activeFeatures.length === 0) {
+      return '← 点击展开文件上传区域';
+    }
+
+    return `Active features: ${activeFeatures.join(', ')}`;
+  };
 
   return (
     <div className="chat-container">
@@ -395,66 +394,81 @@ const Chat: React.FC = () => {
 
       <div className="chat-input">
         <div className="chat-input-wrapper">
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Dropdown overlay={settingsMenu} trigger={['click']}>
-              <Button
-                type="text"
-                icon={<SettingOutlined />}
-                style={{ marginRight: 8 }}
-              />
-            </Dropdown>
-            <Dropdown 
-              overlay={voiceMenu} 
-              trigger={['click']}
-              dropdownRender={(menu) => (
-                <div style={{ 
-                  border: '1px solid #f0f0f0',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  background: '#fff'
-                }}>
-                  {menu}
-                </div>
-              )}
-            >
-              <Button
-                type="text"
-                icon={<AudioOutlined />}
-                style={{ marginRight: 8 }}
-              />
-            </Dropdown>
-            <Sender
-              ref={senderRef}
-              header={senderHeader}
-              open={open}
-              prefix={
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+            <div className="icon-toolbar">
+              {iconButtons.map(({ key, icon, tooltip }) => (
+                <Button
+                  key={key}
+                  type="text"
+                  icon={icon}
+                  className={toolbarStatus[key] ? 'checked' : ''}
+                  onClick={() => toggleIcon(key)}
+                  title={tooltip}
+                />
+              ))}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <Dropdown overlay={settingsMenu} trigger={['click']}>
                 <Button
                   type="text"
-                  icon={<LinkOutlined />}
-                  onClick={() => {
-                    setOpen(!open);
-                  }}
+                  icon={<SettingOutlined />}
+                  style={{ marginRight: 8 }}
                 />
-              }
-              value={text}
-              onChange={setText}
-              onPasteFile={(file) => {
-                attachmentsRef.current?.upload(file);
-                setOpen(true);
-              }}
-              placeholder="← 点击展开文件上传区域"
-              onSubmit={(msg) => {
-                onRequest(msg)
-                setAttachItems([]);
-                setText('');
-              }}
-              allowSpeech={{
-                recording,
-                onRecordingChange: (nextRecording) => {
-                  setRecording(nextRecording);
-                },
-              }}
-            />
+              </Dropdown>
+              <Dropdown 
+                overlay={voiceMenu} 
+                trigger={['click']}
+                dropdownRender={(menu) => (
+                  <div style={{ 
+                    border: '1px solid #f0f0f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    background: '#fff'
+                  }}>
+                    {menu}
+                  </div>
+                )}
+              >
+                <Button
+                  type="text"
+                  icon={<AudioOutlined />}
+                  style={{ marginRight: 8 }}
+                />
+              </Dropdown>
+              <Sender
+                ref={senderRef}
+                header={senderHeader}
+                open={open}
+                prefix={
+                  <Button
+                    type="text"
+                    icon={<LinkOutlined />}
+                    onClick={() => {
+                      setOpen(!open);
+                    }}
+                  />
+                }
+                value={text}
+                onChange={setText}
+                onPasteFile={(file) => {
+                  attachmentsRef.current?.upload(file);
+                  setOpen(true);
+                }}
+                placeholder={getPlaceholder()}
+                onSubmit={async (msg) => {
+                  const processedMsg = await preprocessInput(msg);
+                  onRequest(processedMsg);
+                  setAttachItems([]);
+                  setText('');
+                }}
+                allowSpeech={{
+                  recording,
+                  onRecordingChange: (nextRecording) => {
+                    setRecording(nextRecording);
+                  },
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -111,3 +111,20 @@
 .ant-dropdown-menu-root::-webkit-scrollbar-track {
   background-color: transparent;
 }
+
+.icon-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 8px;
+}
+
+.icon-toolbar .ant-btn {
+  color: #8c8c8c;
+}
+
+.icon-toolbar .ant-btn.checked {
+  color: #1890ff;
+  background-color: #e6f7ff;
+}
