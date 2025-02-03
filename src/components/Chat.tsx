@@ -247,6 +247,8 @@ const Chat: React.FC = () => {
     search: false
   });
 
+  const [toolbarVisible, setToolbarVisible] = React.useState(true);
+
   const toggleIcon = (iconKey: keyof ToolbarStatus) => {
     setToolbarStatus(prev => ({
       ...prev,
@@ -395,7 +397,7 @@ const Chat: React.FC = () => {
       <div className="chat-input">
         <div className="chat-input-wrapper">
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-            <div className="icon-toolbar">
+            <div className={`icon-toolbar ${toolbarVisible ? 'expanded' : 'collapsed'}`}>
               {iconButtons.map(({ key, icon, tooltip }) => (
                 <Button
                   key={key}
@@ -408,6 +410,13 @@ const Chat: React.FC = () => {
               ))}
             </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
+              <Button
+                type="text"
+                icon={<MenuOutlined rotate={toolbarVisible ? 0 : 180} />}
+                onClick={() => setToolbarVisible(!toolbarVisible)}
+                title={toolbarVisible ? "Collapse toolbar" : "Expand toolbar"}
+                style={{ marginRight: 8 }}
+              />
               <Dropdown overlay={settingsMenu} trigger={['click']}>
                 <Button
                   type="text"

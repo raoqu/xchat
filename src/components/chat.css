@@ -112,19 +112,37 @@
   background-color: transparent;
 }
 
-.icon-toolbar {
+.toolbar-container {
   display: flex;
-  gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
+  align-items: flex-start;
   margin-bottom: 8px;
 }
 
+.toolbar-toggle {
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.icon-toolbar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  height: 32px;
+}
+
+.icon-toolbar.collapsed {
+  height: 0;
+  margin-bottom: 0;
+  opacity: 0;
+}
+
 .icon-toolbar .ant-btn {
-  color: #8c8c8c;
+  padding: 4px 8px;
 }
 
 .icon-toolbar .ant-btn.checked {
+  background-color: #e6f4ff;
   color: #1890ff;
-  background-color: #e6f7ff;
 }
